@@ -7,7 +7,7 @@
 
 //global var for enabling functions
 
-bool avtiveCalibraton = true;
+bool activeCalibraton = true;
 
 //global var
 QTRSensors qtr;
@@ -33,10 +33,12 @@ void motorInit(){
  digitalWrite(R_EN, HIGH);
  digitalWrite(L_EN, HIGH);
 }
+
 void motorGo(){
   analogWrite(R_PWM, 0);
   analogWrite(L_PWM, 30);
 }
+
 void motorGo(int speed){
   analogWrite(R_PWM, 0);
   analogWrite(L_PWM, speed);
@@ -62,7 +64,6 @@ void qtrSensorInit(){
   digitalWrite(LED_BUILTIN, LOW); // turn off Arduino's LED to indicate we are through with calibration
 
   // print the calibration minimum values measured when emitters were on
-  Serial.begin(9600);
   for (uint8_t i = 0; i < SensorCount; i++)
   {
     Serial.print(qtr.calibrationOn.minimum[i]);
@@ -81,7 +82,6 @@ void qtrSensorInit(){
   delay(1000);
 }
 
-
 void qtrSensorInitWithoutCal(int minimum,int maximum){
     // configure the sensors
   qtr.setTypeRC();
@@ -92,7 +92,6 @@ void qtrSensorInitWithoutCal(int minimum,int maximum){
 
   qtr.resetCalibration();
   // print the calibration minimum values measured when emitters were on
-  Serial.begin(9600);
   for (uint8_t i = 0; i < SensorCount; i++)
   {
     qtr.calibrationOn.minimum[i] = minimum;
@@ -112,9 +111,6 @@ void qtrSensorInitWithoutCal(int minimum,int maximum){
   Serial.println();
   delay(1000);
 }
-
-
-
 
 void readLine(){
     // read calibrated sensor values and obtain a measure of the line position
@@ -138,6 +134,12 @@ void readLine(){
 
 void setup() {
   // put your setup code here, to run once:
+
+  Serial.begin(9600);
+
+  motorInit();
+
+  activeCalibraton ?  qtrSensorInit() : qtrSensorInitWithoutCal(250,2500);
 
 }
 
