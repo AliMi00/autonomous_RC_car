@@ -15,7 +15,7 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
 
-    myservo.write(90);                 // sets the servo position according to the scaled value
+    myservo.write(80);                 // sets the servo position according to the scaled value
 
 
 }
