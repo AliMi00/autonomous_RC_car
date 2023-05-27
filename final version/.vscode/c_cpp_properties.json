@@ -14,20 +14,26 @@
                 "-fno-threadsafe-statics",
                 "-Wno-error=narrowing"
             ],
-            "intelliSenseMode": "gcc-x64",
+            "intelliSenseMode": "${default}",
             "includePath": [
                 "C:\\Users\\amm57\\AppData\\Local\\Arduino15\\packages\\arduino\\hardware\\avr\\1.8.6\\cores\\arduino",
                 "C:\\Users\\amm57\\AppData\\Local\\Arduino15\\packages\\arduino\\hardware\\avr\\1.8.6\\variants\\mega",
                 "C:\\Users\\amm57\\OneDrive\\Documents\\Arduino\\libraries\\QTRSensors",
+                "C:\\Users\\amm57\\OneDrive\\Documents\\Arduino\\libraries\\Adafruit_VL53L0X",
+                "C:\\Users\\amm57\\OneDrive\\Documents\\Arduino\\libraries\\Adafruit_VL53L0X\\src",
+                "C:\\Users\\amm57\\OneDrive\\Documents\\Arduino\\libraries\\Adafruit_VL53L0X\\src",
                 "c:\\users\\amm57\\appdata\\local\\arduino15\\packages\\arduino\\tools\\avr-gcc\\7.3.0-atmel3.6.1-arduino7\\lib\\gcc\\avr\\7.3.0\\include",
                 "c:\\users\\amm57\\appdata\\local\\arduino15\\packages\\arduino\\tools\\avr-gcc\\7.3.0-atmel3.6.1-arduino7\\lib\\gcc\\avr\\7.3.0\\include-fixed",
-                "c:\\users\\amm57\\appdata\\local\\arduino15\\packages\\arduino\\tools\\avr-gcc\\7.3.0-atmel3.6.1-arduino7\\avr\\include"
+                "c:\\users\\amm57\\appdata\\local\\arduino15\\packages\\arduino\\tools\\avr-gcc\\7.3.0-atmel3.6.1-arduino7\\avr\\include",
+                "C:\\Users\\amm57\\AppData\\Local\\Arduino15\\libraries\\Servo",
+                "C:\\Users\\amm57\\AppData\\Local\\Arduino15\\libraries\\Servo\\src\\megaavr",
+                "C:\\Users\\amm57\\AppData\\Local\\Arduino15\\libraries\\Servo\\src"
             ],
             "forcedInclude": [
                 "C:\\Users\\amm57\\AppData\\Local\\Arduino15\\packages\\arduino\\hardware\\avr\\1.8.6\\cores\\arduino\\Arduino.h"
             ],
-            "cStandard": "c11",
-            "cppStandard": "c++11",
+            "cStandard": "c23",
+            "cppStandard": "c++23",
             "defines": [
                 "F_CPU=16000000L",
                 "ARDUINO=10607",

@@ -8,10 +8,10 @@
 Servo myservo;
 
 int R_IS = 4;
-int R_EN = 2;
+int R_EN = 23;
 int R_PWM = 3;
 int L_IS = 7;
-int L_EN = 2;
+int L_EN = 22;
 int L_PWM = 4;
 
 void setup() {
