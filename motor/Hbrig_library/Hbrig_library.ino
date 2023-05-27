@@ -27,7 +27,6 @@ void setup()
 void loop() 
 {
   motorController.Enable();
-
   for(int speed = 20 ; speed < 60; speed+=10)
   {
 	motorController.TurnLeft(speed);
@@ -43,5 +42,4 @@ void loop()
   }  
   motorController.Stop();
   
-  delay(5000);
 }

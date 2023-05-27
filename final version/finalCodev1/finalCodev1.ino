@@ -43,11 +43,12 @@ uint16_t qtrCalManMax[SensorCount] = {2500};
 uint16_t qtrCalMin[SensorCount] = {0};
 uint16_t qtrCalMax[SensorCount] = {2500};
 
+
 //TOF
 // address we will assign if dual sensor is present
 #define LOX1_ADDRESS 0x30
 #define LOX2_ADDRESS 0x31
-//object
+//objects
 Adafruit_VL53L0X lox1 = Adafruit_VL53L0X();
 Adafruit_VL53L0X lox2 = Adafruit_VL53L0X();
 
@@ -59,6 +60,8 @@ int QtrPosition = -1;
 int speed = 35;
 int objectDistance = 200;
 int tofObjectDif = 3;
+int qtrMinValForWhiteLine = 200;
+
 
 //states
 
@@ -69,14 +72,14 @@ bool isObjectDetected = false;
 //ports
 #pragma region pins
 //motor
-#define R_EN  22;
-#define R_PWM  3;
-#define L_EN  23;
-#define L_PWM  4;
+#define R_EN  22
+#define R_PWM  3
+#define L_EN  23
+#define L_PWM  4
 
-#define SERVO_PIN 9;
+#define SERVO_PIN 9
 //QTR
-#define QTR_EMITTER_PIN  52;
+#define QTR_EMITTER_PIN  52
 const uint8_t QTR_SENSORS_PINS[] = {A0,A1,A2,A3,A4,A5,A6,A7};
 
 //TOF
@@ -148,8 +151,8 @@ void qtrSensorInit(){
 void qtrSensorInitWithoutCal(){
     // configure the sensors
   qtr.setTypeRC();
-  qtr.setSensorPins((const uint8_t[]){A0,A1,A2,A3,A4,A5,A6,A7}, SensorCount);
-  qtr.setEmitterPin(8);
+  qtr.setSensorPins(QTR_SENSORS_PINS, SensorCount);
+  qtr.setEmitterPin(QTR_EMITTER_PIN);
 
   delay(500);
 
@@ -181,7 +184,10 @@ void servoInit(){
 }
 
 void servoMove(int degree){
-  myservo.write(degree);
+  if(degree >= 45 && degree <= 135)
+    myservo.write(degree);
+  else
+    Serial.println("!!!!!! ******** ---------> wrong value for servo");
 }
 
 void readLine(){
@@ -200,7 +206,7 @@ void readLine(){
   // }
   // Serial.println(position);
 
-  delay(250);
+  delay(50);
 }
 
 bool isSeeingLine(){
@@ -305,7 +311,7 @@ void tofInit(){
   
   
   Serial.println(F("TOF Starting..."));
-  setID();
+  tofSetIds();
  
 }
 
@@ -356,9 +362,9 @@ bool loopTheObject(){
     return true;
 //TODO change to see side sensor
   }else if(loopObjectCurrent < loopObjectStart + loopObjectDuration){
-    servoMove(objectLoopReverseDirection)
+    servoMove(objectLoopReverseDirection);
     speed = 25;
-    return true
+    return true;
   }
   else{
     loopObjectStart = 0;
@@ -366,13 +372,22 @@ bool loopTheObject(){
   }
 }
 
+bool endOfLine(){
+  readLine();
+  for(int i = 0;i < SensorCount ; i++){
+     if(sensorValues[i] > qtrMinValForWhiteLine) return false;
+  }
+  return true;
+}
+
 void startCar(){
 
 //here we check if object detected we will loop the object untile loop the object become false which means we passed the object
 //if we didnt detect the object we will detect it
   isObjectDetected = isObjectDetected ? loopTheObject() : detectObject();
-  !isObjectDetected ? followLine();
-  motorGo();
+  if(!isObjectDetected)  followLine();
+
+  if(!endOfLine()) motorGo();
 
 }
 
@@ -384,23 +399,19 @@ void setup() {
   motorInit();
   activeCalibraton ?  qtrSensorInit() : qtrSensorInitWithoutCal();
   servoInit();
+  tofInit();
   motorGo(speed);
 
 }
 void loop() {
   // put your main code here, to run repeatedly:
 
-  // readLine();
+  readLine();
   
   followLine();
-  // for(int i = 45; i < 135;i++){
-  //   servoMove(i);
-  //   delay(150);
 
-  // }
-
-  // delay(1500);
-  
   motorGo(speed);
+  delay(150);
+
 
 }
