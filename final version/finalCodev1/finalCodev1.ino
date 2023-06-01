@@ -26,7 +26,7 @@ unsigned long loopObjectStart = 0;
 
 
 
-bool activeCalibraton = true;
+bool activeCalibraton = false;
 int objectLoopDirection = 45;
 int objectLoopReverseDirection = 135;
 
@@ -38,8 +38,8 @@ Servo myservo;
 QTRSensors qtr;
 const uint8_t SensorCount = 8;
 uint16_t sensorValues[SensorCount];
-uint16_t qtrCalManMin[SensorCount] = {188};
-uint16_t qtrCalManMax[SensorCount] = {2500};
+uint16_t qtrCalManMin[SensorCount] = {188,188,188,188,188,188,188,188};
+uint16_t qtrCalManMax[SensorCount] = {2500,2500,2500,2500,2500,2500,2500,2500};
 uint16_t qtrCalMin[SensorCount] = {0};
 uint16_t qtrCalMax[SensorCount] = {2500};
 
@@ -80,7 +80,7 @@ bool isObjectDetected = false;
 #define SERVO_PIN 9
 //QTR
 #define QTR_EMITTER_PIN  52
-const uint8_t QTR_SENSORS_PINS[] = {A0,A1,A2,A3,A4,A5,A6,A7};
+const uint8_t QTR_SENSORS_PINS[] = {A0,A1,A3,A4,A5,A6,A7,A2};
 
 //TOF
 //pins to shutdown sensors
@@ -162,12 +162,13 @@ void qtrSensorInitWithoutCal(){
   qtr.setEmitterPin(QTR_EMITTER_PIN);
 
   delay(500);
+  qtr.calibrate();
 
-  qtr.resetCalibration();
+  // qtr.resetCalibration();
   // print the calibration minimum values measured when emitters were on
   for (uint8_t i = 0; i < SensorCount; i++)
   {
-    qtr.calibrationOn.minimum[i] = qtrCalManMin[i];
+    qtr.calibrationOn.minimum[i] = 188;
     Serial.print(qtr.calibrationOn.minimum[i]);
     Serial.print(' ');
   }
@@ -176,10 +177,13 @@ void qtrSensorInitWithoutCal(){
   // print the calibration maximum values measured when emitters were on
   for (uint8_t i = 0; i < SensorCount; i++)
   {
-    qtr.calibrationOn.maximum[i] = qtrCalManMax[i];
+    qtr.calibrationOn.maximum[i] = 2500;
     Serial.print(qtr.calibrationOn.maximum[i]);
     Serial.print(' ');
   }
+  qtr.calibrationOn.minimum = qtrCalManMin;
+  qtr.calibrationOn.maximum = qtrCalManMax;
+
   Serial.println();
   Serial.println();
   delay(1000);
@@ -358,8 +362,9 @@ bool detectObject(){
   for(int i = 0;i< 10;i++)
   {
     if(measure1.RangeMilliMeter < objectDistance &&
-        measure2.RangeMilliMeter < objectDistance && 
-        measure1.RangeMilliMeter - measure2.RangeMilliMeter < tofObjectDif){
+        measure2.RangeMilliMeter < objectDistance 
+        // && measure1.RangeMilliMeter - measure2.RangeMilliMeter < tofObjectDif
+        ){
           result = true;
     }
     else
