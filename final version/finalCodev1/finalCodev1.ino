@@ -14,7 +14,7 @@
 //global var for enabling functions
 #pragma region virtual_delays
 unsigned long motorStartStrong = 150;
-unsigned long loopObjectDuration = 1000;
+unsigned long loopObjectDuration = 6000;
 unsigned long loopObjectCurrent = 0;
 unsigned long loopObjectStart = 0;
 
@@ -26,7 +26,7 @@ unsigned long loopObjectStart = 0;
 
 
 
-bool activeCalibraton = false;
+bool activeCalibraton = true;
 int objectLoopDirection = 45;
 int objectLoopReverseDirection = 135;
 
@@ -210,12 +210,12 @@ void readLine(){
   // print the sensor values as numbers from 0 to 1000, where 0 means maximum
   // reflectance and 1000 means minimum reflectance, followed by the line
   // position
-  for (uint8_t i = 0; i < SensorCount; i++)
-  {
-    Serial.print(sensorValues[i]);
-    Serial.print('\t');
-  }
-  Serial.println(QtrPosition);
+  // for (uint8_t i = 0; i < SensorCount; i++)
+  // {
+  //   Serial.print(sensorValues[i]);
+  //   Serial.print('\t');
+  // }
+  // Serial.println(QtrPosition);
 
   delay(50);
 }
@@ -237,10 +237,10 @@ void followLine(){
   if(isSeeingLine){
     // Serial.println("see");
 //TODO age dorost nemicharkhid ino bokonom jori ke age vasat bod hamon 90 daraje bashe age gheir bod atomatic map kone
-    if(QtrPosition <= 2000){
+    if(QtrPosition <= 3000){
       degree = map(QtrPosition, 0, 2000, 45, 90);
     }
-    else if(QtrPosition >= 3000){
+    else if(QtrPosition >= 4000){
       degree = map(QtrPosition, 3000, 5000, 90, 135);
     }
     else{
@@ -336,63 +336,77 @@ void readTofsensors() {
   lox2.rangingTest(&measure2, false); // pass in 'true' to get debug data printout!
 
   // print sensor one reading
-  Serial.print(F("1: "));
-  if(measure1.RangeStatus != 4 && measure1.RangeMilliMeter != 8191) {     // if not out of range
-    Serial.print(measure1.RangeMilliMeter);
-  } else {
-    Serial.print(F("Out of range"));
-  }
+  // Serial.print(F("1: "));
+  // if(measure1.RangeStatus != 4 && measure1.RangeMilliMeter != 8191) {     // if not out of range
+  //   Serial.print(measure1.RangeMilliMeter);
+  // } else {
+  //   Serial.print(F("Out of range"));
+  // }
   
-  Serial.print(F(" "));
+  // Serial.print(F(" "));
 
   // print sensor two reading
-  Serial.print(F("2: "));
-  if(measure2.RangeStatus != 4 && measure1.RangeMilliMeter != 8191) {
-    Serial.print(measure2.RangeMilliMeter);
-  } else {
-    Serial.print(F("Out of range"));
-  }
+  // Serial.print(F("2: "));
+  // if(measure2.RangeStatus != 4 && measure1.RangeMilliMeter != 8191) {
+  //   Serial.print(measure2.RangeMilliMeter);
+  // } else {
+  //   Serial.print(F("Out of range"));
+  // }
   
   Serial.println();
 }
 
 
-bool detectObject(){
+void detectObject(){
   bool result = false;
-  for(int i = 0;i< 10;i++)
+  for(int i = 0;i< 3;i++)
   {
-    if(measure1.RangeMilliMeter < objectDistance &&
-        measure2.RangeMilliMeter < objectDistance 
+    readTofsensors();
+    int val1 = measure1.RangeMilliMeter;
+    int val2 = measure2.RangeMilliMeter;
+    Serial.println(val1);
+    Serial.println(val2);
+
+
+    if(val2 < objectDistance
+        // && val1 < objectDistance
         // && measure1.RangeMilliMeter - measure2.RangeMilliMeter < tofObjectDif
         ){
           result = true;
     }
     else
     {
-      return false;
+      isObjectDetected = false;
+      return;
     }
       
   }
-  return result;
+  Serial.println(F("object detected"));
+  isObjectDetected = result;
+  Serial.println(result);
+
 }
 
-bool loopTheObject(){
+void loopTheObject(){
   loopObjectCurrent = millis();
   loopObjectStart = loopObjectStart == 0 ?   loopObjectCurrent : loopObjectStart;
 
   if(loopObjectCurrent < loopObjectStart + loopObjectDuration/2){
     servoMove(objectLoopDirection);
     speed = 25;
-    return true;
+    isObjectDetected = true;
+    return;
 //TODO change to see side sensor
   }else if(loopObjectCurrent < loopObjectStart + loopObjectDuration){
     servoMove(objectLoopReverseDirection);
     speed = 25;
-    return true;
+    isObjectDetected = true;
+    return;
   }
   else{
     loopObjectStart = 0;
-    return false;
+    isObjectDetected = false;
+    return;
   }
 }
 
@@ -408,7 +422,17 @@ void startCar(){
 
 //here we check if object detected we will loop the object untile loop the object become false which means we passed the object
 //if we didnt detect the object we will detect it
-  isObjectDetected = isObjectDetected ? loopTheObject() : detectObject();
+  // isObjectDetected = isObjectDetected ? loopTheObject() : detectObject();
+  if(isObjectDetected){
+    loopTheObject();
+    
+  }
+  else{
+    detectObject();
+  }
+
+  Serial.print(isObjectDetected);
+
   if(!isObjectDetected)  followLine();
 
   if(!endOfLine()) motorGo();
@@ -432,9 +456,14 @@ void loop() {
 
   // readLine();
   
-  followLine();
+  // followLine();
 
-  motorGo(speed);
+  // motorGo(speed);
+
+  startCar();
+  // detectObject();
+
+  // Serial.println(isObjectDetected);
 
   // readTofsensors();
   delay(150);
