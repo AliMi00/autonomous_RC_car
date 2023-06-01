@@ -26,7 +26,7 @@ unsigned long loopObjectStart = 0;
 
 
 
-bool activeCalibraton = true;
+bool activeCalibraton = false;
 int objectLoopDirection = 45;
 int objectLoopReverseDirection = 135;
 
@@ -38,7 +38,7 @@ Servo myservo;
 QTRSensors qtr;
 const uint8_t SensorCount = 8;
 uint16_t sensorValues[SensorCount];
-uint16_t qtrCalManMin[SensorCount] = {500};
+uint16_t qtrCalManMin[SensorCount] = {192,188,236,184,188,184,184,188};
 uint16_t qtrCalManMax[SensorCount] = {2500};
 uint16_t qtrCalMin[SensorCount] = {0};
 uint16_t qtrCalMax[SensorCount] = {2500};
@@ -99,13 +99,20 @@ void motorInit(){
 }
 
 void motorGo(){
-  analogWrite(R_PWM, speed);
   analogWrite(L_PWM, 0);
+  delayMicroseconds(100);
+  analogWrite(R_PWM, speed);
+
 }
 
-void motorGo(int speed){
-  analogWrite(R_PWM, speed);
+void motorGo(int mySpeed){
   analogWrite(L_PWM, 0);
+  delayMicroseconds(100);
+  analogWrite(R_PWM, mySpeed);
+}
+void motorStop(){
+  analogWrite(L_PWM, LOW);
+  analogWrite(R_PWM, LOW);
 }
 
 void qtrSensorInit(){
@@ -199,12 +206,12 @@ void readLine(){
   // print the sensor values as numbers from 0 to 1000, where 0 means maximum
   // reflectance and 1000 means minimum reflectance, followed by the line
   // position
-  // for (uint8_t i = 0; i < SensorCount; i++)
-  // {
-  //   Serial.print(sensorValues[i]);
-  //   Serial.print('\t');
-  // }
-  // Serial.println(position);
+  for (uint8_t i = 0; i < SensorCount; i++)
+  {
+    Serial.print(sensorValues[i]);
+    Serial.print('\t');
+  }
+  Serial.println(QtrPosition);
 
   delay(50);
 }
@@ -259,7 +266,7 @@ void followLine(){
   // Serial.println(degree);
   if (degree >= 45 && degree <= 135)
   {
-    speed = 30;
+    speed = 25;
     servoMove(degree);
   }
   // delay(150);
@@ -295,6 +302,9 @@ void tofSetIds(){
     Serial.println(F("Failed to boot second VL53L0X"));
     while(1);
   }
+  lox1.configSensor(4);
+  lox2.configSensor(4);
+
 
 }
 void tofInit(){
@@ -323,7 +333,7 @@ void readTofsensors() {
 
   // print sensor one reading
   Serial.print(F("1: "));
-  if(measure1.RangeStatus != 4) {     // if not out of range
+  if(measure1.RangeStatus != 4 && measure1.RangeMilliMeter != 8191) {     // if not out of range
     Serial.print(measure1.RangeMilliMeter);
   } else {
     Serial.print(F("Out of range"));
@@ -333,7 +343,7 @@ void readTofsensors() {
 
   // print sensor two reading
   Serial.print(F("2: "));
-  if(measure2.RangeStatus != 4) {
+  if(measure2.RangeStatus != 4 && measure1.RangeMilliMeter != 8191) {
     Serial.print(measure2.RangeMilliMeter);
   } else {
     Serial.print(F("Out of range"));
@@ -344,12 +354,21 @@ void readTofsensors() {
 
 
 bool detectObject(){
-  if(measure1.RangeMilliMeter < objectDistance &&
-      measure2.RangeMilliMeter < objectDistance && 
-      measure1.RangeMilliMeter - measure2.RangeMilliMeter < tofObjectDif){
-        return true;
-      }
-return false;
+  bool result = false;
+  for(int i = 0;i< 10;i++)
+  {
+    if(measure1.RangeMilliMeter < objectDistance &&
+        measure2.RangeMilliMeter < objectDistance && 
+        measure1.RangeMilliMeter - measure2.RangeMilliMeter < tofObjectDif){
+          result = true;
+    }
+    else
+    {
+      return false;
+    }
+      
+  }
+  return result;
 }
 
 bool loopTheObject(){
@@ -400,17 +419,19 @@ void setup() {
   activeCalibraton ?  qtrSensorInit() : qtrSensorInitWithoutCal();
   servoInit();
   tofInit();
-  motorGo(speed);
+  // motorGo(speed);
 
 }
 void loop() {
   // put your main code here, to run repeatedly:
 
-  readLine();
+  // readLine();
   
   followLine();
 
   motorGo(speed);
+
+  // readTofsensors();
   delay(150);
 
 
