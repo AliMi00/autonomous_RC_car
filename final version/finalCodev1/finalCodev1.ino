@@ -26,7 +26,7 @@ unsigned long loopObjectStart = 0;
 
 
 
-bool activeCalibraton = false;
+bool activeCalibraton = true;
 int objectLoopDirection = 45;
 int objectLoopReverseDirection = 135;
 
@@ -38,7 +38,7 @@ Servo myservo;
 QTRSensors qtr;
 const uint8_t SensorCount = 8;
 uint16_t sensorValues[SensorCount];
-uint16_t qtrCalManMin[SensorCount] = {192,188,236,184,188,184,184,188};
+uint16_t qtrCalManMin[SensorCount] = {188};
 uint16_t qtrCalManMax[SensorCount] = {2500};
 uint16_t qtrCalMin[SensorCount] = {0};
 uint16_t qtrCalMax[SensorCount] = {2500};
