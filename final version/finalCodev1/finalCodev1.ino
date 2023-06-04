@@ -17,21 +17,29 @@ unsigned long motorStartStrong = 150;
 unsigned long loopObjectDuration = 6000;
 unsigned long loopObjectCurrent = 0;
 unsigned long loopObjectStart = 0;
-
-
-
+unsigned long rampDurationStart = 0;
+unsigned long rampDuration = 1000;
 
 
 #pragma endregion
 
 
 
-bool activeCalibraton = true;
+bool activeCalibraton = false;
 int objectLoopDirection = 45;
 int objectLoopReverseDirection = 135;
 
 
 #pragma region Global_var
+
+//values
+int QtrPosition = -1;
+int speed = 35;
+int objectDistance = 200;
+int rampDistance = 350;
+int tofRampdif = 30;
+int tofObjectDif = 100;
+int qtrMinValForWhiteLine = 500;
 
 Servo myservo;
 //QTR
@@ -42,7 +50,6 @@ uint16_t qtrCalManMin[SensorCount] = {188,188,188,188,188,188,188,188};
 uint16_t qtrCalManMax[SensorCount] = {2500,2500,2500,2500,2500,2500,2500,2500};
 uint16_t qtrCalMin[SensorCount] = {0};
 uint16_t qtrCalMax[SensorCount] = {2500};
-
 
 //TOF
 // address we will assign if dual sensor is present
@@ -55,22 +62,24 @@ Adafruit_VL53L0X lox2 = Adafruit_VL53L0X();
 VL53L0X_RangingMeasurementData_t measure1;
 VL53L0X_RangingMeasurementData_t measure2;
 
-//values
-int QtrPosition = -1;
-int speed = 35;
-int objectDistance = 200;
-int tofObjectDif = 3;
-int qtrMinValForWhiteLine = 200;
-
-
 //states
 
 bool isObjectDetected = false;
+bool isRampDetected = false;
 
 #pragma endregion
 
 //ports
 #pragma region pins
+
+//ultra
+
+#define ULTRA_1_PING_PIN 26
+#define ULTRA_1_ECHO_PIN 27
+
+#define ULTRA_2_PING_PIN 28
+#define ULTRA_2_ECHO_PIN 29
+
 //motor
 #define R_EN  22
 #define R_PWM  3
@@ -88,6 +97,36 @@ const uint8_t QTR_SENSORS_PINS[] = {A0,A1,A3,A4,A5,A6,A7,A2};
 #define SHT_LOX2 25
 
 #pragma endregion
+
+long ultra1GetDistance(){
+   long duration, cm;
+   pinMode(ULTRA_1_PING_PIN, OUTPUT);
+   digitalWrite(ULTRA_1_PING_PIN, LOW);
+   delayMicroseconds(2);
+   digitalWrite(ULTRA_1_PING_PIN, HIGH);
+   delayMicroseconds(10);
+   digitalWrite(ULTRA_1_PING_PIN, LOW);
+   pinMode(echoPin, INPUT);
+   duration = pulseIn(ULTRA_1_ECHO_PIN, HIGH);
+   cm = duration / 29 / 2;
+   return cm;
+}
+
+
+long ultra2GetDistance(){
+   long duration, cm;
+   pinMode(ULTRA_2_PING_PIN, OUTPUT);
+   digitalWrite(ULTRA_2_PING_PIN, LOW);
+   delayMicroseconds(2);
+   digitalWrite(ULTRA_2_PING_PIN, HIGH);
+   delayMicroseconds(10);
+   digitalWrite(ULTRA_2_PING_PIN, LOW);
+   pinMode(echoPin, INPUT);
+   duration = pulseIn(ULTRA_2_ECHO_PIN, HIGH);
+   cm = duration / 29 / 2;
+   return cm;
+}
+
 
 void motorInit(){
  pinMode(R_EN, OUTPUT);
@@ -152,6 +191,8 @@ void qtrSensorInit(){
   }
   Serial.println();
   Serial.println();
+
+  qtrMinValForWhiteLine = qtrCalMin[5] + qtrMinValForWhiteLine;
   delay(1000);
 }
 
@@ -186,6 +227,9 @@ void qtrSensorInitWithoutCal(){
 
   Serial.println();
   Serial.println();
+  
+  qtrMinValForWhiteLine = qtrCalMin[5] + qtrMinValForWhiteLine;
+
   delay(1000);
 }
 
@@ -201,6 +245,8 @@ void servoMove(int degree){
     Serial.println("!!!!!! ******** ---------> wrong value for servo");
 }
 
+
+
 void readLine(){
     // read calibrated sensor values and obtain a measure of the line position
   // from 0 to 5000 (for a white line, use readLineWhite() instead)
@@ -210,12 +256,12 @@ void readLine(){
   // print the sensor values as numbers from 0 to 1000, where 0 means maximum
   // reflectance and 1000 means minimum reflectance, followed by the line
   // position
-  // for (uint8_t i = 0; i < SensorCount; i++)
-  // {
-  //   Serial.print(sensorValues[i]);
-  //   Serial.print('\t');
-  // }
-  // Serial.println(QtrPosition);
+  for (uint8_t i = 0; i < SensorCount; i++)
+  {
+    Serial.print(sensorValues[i]);
+    Serial.print('\t');
+  }
+  Serial.println(QtrPosition);
 
   delay(50);
 }
@@ -234,31 +280,35 @@ void followLine(){
   readLine();
   // Serial.println(position);
   int degree = 90;
-  if(isSeeingLine){
+  if(isSeeingLine && !isRampDetected){
     // Serial.println("see");
 //TODO age dorost nemicharkhid ino bokonom jori ke age vasat bod hamon 90 daraje bashe age gheir bod atomatic map kone
     if(QtrPosition <= 3000){
-      degree = map(QtrPosition, 0, 2000, 45, 90);
+      degree = map(QtrPosition, 0, 2500, 45, 90);
     }
-    else if(QtrPosition >= 4000){
-      degree = map(QtrPosition, 3000, 5000, 90, 135);
+    else if(QtrPosition >= 4500){
+      degree = map(QtrPosition, 4000, 7000, 90, 135);
     }
     else{
       // Serial.println("90");
       degree = 90;
-    }    
+    } 
+    // degree = map(QtrPosition, 0, 7000, 45, 135);
   }
-  else{
-    if(QtrPosition <= 2500){
-      degree = 45;
-    }
-    else if(QtrPosition > 2500){
-      degree = 135;
-    }
-    else{
-      degree = 90;
-    }
+  else if(!isSeeingLine && isRampDetected){
+    degree = 90;
   }
+  // else{
+  //   if(QtrPosition <= 3500){
+  //     degree = 45;
+  //   }
+  //   else if(QtrPosition > 3500){
+  //     degree = 135;
+  //   }
+  //   else{
+  //     degree = 90;
+  //   }
+  // }
   //check the value
   if(degree > 135){
     degree = 135;
@@ -270,7 +320,10 @@ void followLine(){
   // Serial.println(degree);
   if (degree >= 45 && degree <= 135)
   {
-    speed = 25;
+    if(degree == 90)
+      speed = 30;
+    else
+      speed = 25;
     servoMove(degree);
   }
   // delay(150);
@@ -364,13 +417,15 @@ void detectObject(){
     readTofsensors();
     int val1 = measure1.RangeMilliMeter;
     int val2 = measure2.RangeMilliMeter;
-    Serial.println(val1);
-    Serial.println(val2);
+    // Serial.println(val1);
+    // Serial.println(val2);
+
 
 
     if(val2 < objectDistance
-        // && val1 < objectDistance
-        // && measure1.RangeMilliMeter - measure2.RangeMilliMeter < tofObjectDif
+        && val1 < objectDistance
+        && val1 - val2 < tofObjectDif
+        && !isRampDetected
         ){
           result = true;
     }
@@ -418,6 +473,46 @@ bool endOfLine(){
   return true;
 }
 
+void detectRamp(){
+  bool result = false;
+  if(isRampDetected && rampDurationStart + rampDuration < millis()){
+    rampDurationStart = 0;
+    isRampDetected = false;
+    return;
+  }
+
+  for(int i = 0;i< 2;i++)
+  {
+    readTofsensors();
+    int val1 = measure1.RangeMilliMeter;
+    int val2 = measure2.RangeMilliMeter;
+    // Serial.println(val1);
+    // Serial.println(val2);
+    // Serial.println("------------------------------->");
+
+
+
+    if(val2 < rampDistance
+        && val1 < rampDistance
+        && !isObjectDetected
+        && val1 - val2 > tofRampdif
+        )
+    {
+      rampDurationStart = millis();
+      result = true;
+    }
+    else
+    {
+      // isRampDetected = false;
+      return;
+    }
+      
+  }
+  Serial.println(F("ramp detected"));
+  isRampDetected = result;
+  // speed = 50;
+}
+
 void startCar(){
 
 //here we check if object detected we will loop the object untile loop the object become false which means we passed the object
@@ -428,14 +523,17 @@ void startCar(){
     
   }
   else{
-    detectObject();
+    // detectObject();
+    detectRamp();
   }
 
-  Serial.print(isObjectDetected);
-
+  // Serial.print(isObjectDetected);
+  Serial.println(speed);
   if(!isObjectDetected)  followLine();
 
-  if(!endOfLine()) motorGo();
+  speed = isRampDetected  ? 80 : speed;
+
+  // if(!endOfLine()) motorGo(speed);
 
 }
 
