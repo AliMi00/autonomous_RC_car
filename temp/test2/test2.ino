@@ -33,7 +33,7 @@ int objectLoopDirection = 135;
 int objectLoopReverseDirection = 45;
 bool stopCar = false;
 bool firstTimeObject = false;
-bool firstTime
+bool firstTimeRamp = false;
 
 
 
@@ -713,6 +713,7 @@ void detectRamp(){
           
       }
       Serial.println(F("ramp detected"));
+      firstTimeRamp = true;
       isRampDetected = result;
   }
 
@@ -737,13 +738,14 @@ void startCar(){
   else{
     if(!firstTimeObject)
       detectObject();
-    detectRamp();
+    if(!firstTimeRamp)
+      detectRamp();
   }
 
   // Serial.print(isObjectDetected);
   // Serial.println(speed);
   if(!isObjectDetected)  followLine();
-  else{readLine();}
+  // else{readLine();}
 
   speed = isRampDetected  ? 80 : speed;
   
@@ -759,17 +761,19 @@ void startCar(){
 
 }
 
-// void readButton() {
-//   // Read the button state
-//   bool currentButtonState = digitalRead(BUTTON_PIN);
+void readButton() {
+  // Read the button state
+  bool currentButtonState = digitalRead(BUTTON_PIN);
 
-//   // Check if the button state has changed
-//   if (currentButtonState != lastButtonState) {
-//     // Update the button state
-//     stopCar = !stopCar;
-//     delay(15);
-//   }
-// }
+  // Check if the button state has changed
+  if (currentButtonState != lastButtonState) {
+    // Update the button state
+    stopCar = !stopCar;
+    lastButtonState = currentButtonState;
+    // delay(15);
+   // Serial.println("button");
+  }
+}
 
 void setup() {
   // put your setup code here, to run once:
