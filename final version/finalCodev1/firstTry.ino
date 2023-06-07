@@ -7,8 +7,6 @@
 #include "Adafruit_VL53L0X.h"
 #include <Servo.h>
 #include <PID_v1.h>
-#include "pitches.h"
-
 
 
 
@@ -17,11 +15,11 @@
 //global var for enabling functions
 #pragma region virtual_delays
 unsigned long motorStartStrong = 150;
-unsigned long loopObjectDuration = 6000;
+unsigned long loopObjectDuration = 12000;
 unsigned long loopObjectCurrent = 0;
 unsigned long loopObjectStart = 0;
 unsigned long rampDurationStart = 0;
-unsigned long rampDuration = 2000;
+unsigned long rampDuration = 1000;
 
 
 #pragma endregion
@@ -32,8 +30,6 @@ bool activeCalibraton = false;
 int objectLoopDirection = 135;
 int objectLoopReverseDirection = 45;
 bool stopCar = false;
-bool firstTimeObject = false;
-bool firstTimeRamp = false;
 
 
 
@@ -43,8 +39,8 @@ bool firstTimeRamp = false;
 //values
 int QtrPosition = -1;
 int speed = 35;
-int objectDistance = 400;
-int rampDistance = 400;
+int objectDistance = 200;
+int rampDistance = 30;
 int tofRampdif = 20;
 int tofObjectDif = 50;
 int qtrMinValForWhiteLine = 200;
@@ -130,84 +126,8 @@ const uint8_t QTR_SENSORS_PINS[] = {A0,A1,A3,A4,A5,A6,A7,A2};
 
 #define BUTTON_PIN 30
 
-#define BUZZER_PIN 11
-
-
 #pragma endregion
 
-int melody[] = {
-  REST, REST, REST, REST, NOTE_E4, NOTE_A4, NOTE_C5,
-  
-  NOTE_B4, NOTE_A4, NOTE_C5, NOTE_A4, NOTE_B4, NOTE_A4, NOTE_F4, NOTE_G4,
-  NOTE_E4, NOTE_E4, NOTE_A4, NOTE_C5,
-  NOTE_B4, NOTE_A4, NOTE_C5, NOTE_A4, NOTE_C5, NOTE_A4, NOTE_E4, NOTE_DS4,
-
-  NOTE_D4, NOTE_D4, NOTE_F4, NOTE_GS4,
-  NOTE_B4, NOTE_D4, NOTE_F4, NOTE_GS4,
-  NOTE_A4, NOTE_C4, NOTE_C4, NOTE_G4,
-  NOTE_F4, NOTE_E4, NOTE_G4, NOTE_F4, NOTE_F4, NOTE_E4, NOTE_E4, NOTE_GS4,
-
-  NOTE_A4, REST, NOTE_A4, NOTE_A4, NOTE_GS4,
-  NOTE_G4, NOTE_B4, NOTE_A4, NOTE_F4,
-  NOTE_E4, NOTE_E4, NOTE_G4, NOTE_E4,
-  NOTE_D4, NOTE_D4, NOTE_D4, NOTE_F4, NOTE_DS4,
-
-  NOTE_E4, REST, NOTE_E4, NOTE_A4, NOTE_C5,
-
-  //repeat
-  NOTE_B4, NOTE_A4, NOTE_C5, NOTE_A4, NOTE_B4, NOTE_A4, NOTE_F4, NOTE_G4,
-  NOTE_E4, NOTE_E4, NOTE_A4, NOTE_C5,
-  NOTE_B4, NOTE_A4, NOTE_C5, NOTE_A4, NOTE_C5, NOTE_A4, NOTE_E4, NOTE_DS4,
-
-  NOTE_D4, NOTE_D4, NOTE_F4, NOTE_GS4,
-  NOTE_B4, NOTE_D4, NOTE_F4, NOTE_GS4,
-  NOTE_A4, NOTE_C4, NOTE_C4, NOTE_G4,
-  NOTE_F4, NOTE_E4, NOTE_G4, NOTE_F4, NOTE_F4, NOTE_E4, NOTE_E4, NOTE_GS4,
-
-  NOTE_A4, REST, NOTE_A4, NOTE_A4, NOTE_GS4,
-  NOTE_G4, NOTE_B4, NOTE_A4, NOTE_F4,
-  NOTE_E4, NOTE_E4, NOTE_G4, NOTE_E4,
-  NOTE_D4, NOTE_D4, NOTE_D4, NOTE_F4, NOTE_DS4,
-
-  NOTE_E4
-};
-
-
-int durations[] = {
-  4, 8, 8, 8, 8, 8, 8,
-  8, 8, 8, 8, 8, 8, 8, 8,
-  2, 8, 8, 8,
-  8, 8, 8, 8, 8, 8, 8, 8,
-
-  2, 8, 8, 8,
-  2, 8, 8, 8,
-  2, 8, 8, 8,
-  8, 8, 8, 8, 8, 8, 8, 8,
-
-  2, 8, 8, 8, 8,
-  2, 8, 8, 8,
-  2, 8, 8, 8,
-  2, 8, 8, 8, 8,
-
-  2, 8, 8, 8, 8,
-
-  //repeats
-  8, 8, 8, 8, 8, 8, 8, 8,
-  2, 8, 8, 8,
-  8, 8, 8, 8, 8, 8, 8, 8,
-
-  2, 8, 8, 8,
-  2, 8, 8, 8,
-  2, 8, 8, 8,
-  8, 8, 8, 8, 8, 8, 8, 8,
-
-  2, 8, 8, 8, 8,
-  2, 8, 8, 8,
-  2, 8, 8, 8,
-  2, 8, 8, 8, 8,
-
-  2
-};
 long ultra1GetDistance(){
    long duration, cm;
    pinMode(ULTRA_1_PING_PIN, OUTPUT);
@@ -396,9 +316,7 @@ void readLine(){
   //   Serial.print(sensorValues[i]);
   //   Serial.print('\t');
   // }
-  // Serial.print(QtrPosition);
-  // Serial.print('\t');
-
+  // Serial.println(QtrPosition);
 
   // delay(50);
 }
@@ -491,9 +409,6 @@ void followLine(){
   else if(!isSeeingLine && isRampDetected){
     degree = 90;
   }
-  else if(isRampDetected && rampDurationStart + 2000 > millis()){
-      degree = 90;
-  }
   else{
     if(QtrPosition < 3000){
       degree = map(QtrPosition, 0, 3000, 45, 90);
@@ -505,14 +420,21 @@ void followLine(){
     //   degree = 90;
     // } 
   }
+  //check the value
+  if(degree > 135){
+    degree = 135;
+  }
+  else if(degree < 45){
+    degree = 45;
+  }
   //final check for not breaking the servo
   // Serial.println(degree);
   if (degree >= 45 && degree <= 135)
   {
     if(degree < 80 && degree > 100)
-      speed = 25;
-    else
       speed = 28;
+    else
+      speed = 25;
     servoMove(degree);
   }
   // delay(150);
@@ -597,7 +519,7 @@ void readTofsensors() {
   //   Serial.print(F("Out of range"));
   // }
   
-  // Serial.println();
+  Serial.println();
 }
 
 #pragma endregion
@@ -614,11 +536,11 @@ void detectObject(){
     // long val1 = ultra1GetDistance();
     // long val2 = ultra2GetDistance();
 
-    // Serial.println(val1);
-    // Serial.println(val2);
+    Serial.println(val1);
+    Serial.println(val2);
 
 
-    if(val2 > objectDistance
+    if(val2 < objectDistance
         && val1 < objectDistance
         // && val1 - val2 < tofObjectDif
         && !isRampDetected
@@ -639,24 +561,25 @@ void detectObject(){
 }
 
 void loopTheObject(){
-  readLine();
   loopObjectCurrent = millis();
   loopObjectStart = loopObjectStart == 0 ?   loopObjectCurrent : loopObjectStart;
 
-  if(loopObjectCurrent <= loopObjectStart + loopObjectDuration/2){
+  if(loopObjectCurrent < loopObjectStart + loopObjectDuration/2){
     servoMove(objectLoopDirection);
     speed = 25;
     isObjectDetected = true;
+    return;
 //TODO change to see side sensor
   }else if(loopObjectCurrent < loopObjectStart + loopObjectDuration){
     servoMove(objectLoopReverseDirection);
     speed = 25;
     isObjectDetected = true;
+    return;
   }
   else{
     loopObjectStart = 0;
     isObjectDetected = false;
-    firstTimeObject = true;
+    return;
   }
 }
 
@@ -668,10 +591,7 @@ bool endOfLine(){
     }
   }
   stopCar = true;
-
-
   return true;
-  
 }
 
 void detectRamp(){
@@ -681,42 +601,39 @@ void detectRamp(){
     isRampDetected = false;
     return;
   }
-  else if(!isRampDetected){
-    for(int i = 0;i< 3;i++)
-      {
-        readTofsensors();
-        int val1 = measure1.RangeMilliMeter;
-        int val2 = measure2.RangeMilliMeter;
-        // Serial.println(val1);
-        // Serial.println(val2);
-        // Serial.println("------------------------------->");
+
+  for(int i = 0;i< 3;i++)
+  {
+    readTofsensors();
+    int val1 = measure1.RangeMilliMeter;
+    int val2 = measure2.RangeMilliMeter;
+    // Serial.println(val1);
+    // Serial.println(val2);
+    // Serial.println("------------------------------->");
 
 
-        // long val1 = ultra1GetDistance();
-        // long val2 = ultra2GetDistance();
+    // long val1 = ultra1GetDistance();
+    // long val2 = ultra2GetDistance();
 
-        if(val2 < rampDistance
-            && val1 < rampDistance
-            && val2 != 0
-            && !isObjectDetected
-            // && val1 - val2 > tofRampdif
-            )
-        {
-          rampDurationStart = millis();
-          result = true;
-        }
-        else
-        {
-          // isRampDetected = false;
-          return;
-        }
-          
-      }
-      Serial.println(F("ramp detected"));
-      isRampDetected = result;
+    if(val2 < rampDistance
+        && val1 < rampDistance
+        && val2 != 0
+        && !isObjectDetected
+        // && val1 - val2 > tofRampdif
+        )
+    {
+      rampDurationStart = millis();
+      result = true;
+    }
+    else
+    {
+      // isRampDetected = false;
+      return;
+    }
+      
   }
-
-  
+  Serial.println(F("ramp detected"));
+  isRampDetected = result;
   // speed = 50;
 }
 
@@ -729,21 +646,18 @@ void startCar(){
   // Serial.println("start car");
 
   if(isObjectDetected){
-    firstTimeObject = true;
     loopTheObject();
     // Serial.println("loop object");
     
   }
   else{
-    if(!firstTimeObject)
-      detectObject();
-    detectRamp();
+    // detectObject();
+    // detectRamp();
   }
 
   // Serial.print(isObjectDetected);
   // Serial.println(speed);
   if(!isObjectDetected)  followLine();
-  else{readLine();}
 
   speed = isRampDetected  ? 80 : speed;
   
@@ -775,8 +689,6 @@ void setup() {
   // put your setup code here, to run once:
 
   Serial.begin(9600);
-  pinMode(BUZZER_PIN, OUTPUT);
-
 
   motorInit();
   activeCalibraton ?  qtrSensorInit() : qtrSensorInitWithoutCal();
@@ -797,26 +709,6 @@ void loop() {
   // motorGo(speed);
   // readButton();
   startCar();
-
-  // if(stopCar){
-  //     int size = sizeof(durations) / sizeof(int);
-
-  // for (int note = 0; note < size; note++) {
-  //   //to calculate the note duration, take one second divided by the note type.
-  //   //e.g. quarter note = 1000 / 4, eighth note = 1000/8, etc.
-  //   int duration = 1000 / durations[note];
-  //   tone(BUZZER_PIN, melody[note], duration);
-
-  //   //to distinguish the notes, set a minimum time between them.
-  //   //the note's duration + 30% seems to work well:
-  //   int pauseBetweenNotes = duration * 1.30;
-  //   delay(pauseBetweenNotes);
-
-  //   //stop the tone playing:
-  //   noTone(BUZZER_PIN);
-  // }
-  // }
-  
 
   //  stopCar ? motorStop() : startCar();
   // detectObject();

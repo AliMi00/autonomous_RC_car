@@ -33,7 +33,7 @@ int objectLoopDirection = 135;
 int objectLoopReverseDirection = 45;
 bool stopCar = false;
 bool firstTimeObject = false;
-bool firstTimeRamp = false;
+bool firstTime
 
 
 
